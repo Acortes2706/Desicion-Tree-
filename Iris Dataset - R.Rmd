@@ -1,0 +1,177 @@
+---
+title: "Dataset iris"
+output: html_document
+date: '2022-08-09'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(rpart)
+library(rpart.plot)
+library(caret)
+```
+
+
+```{r}
+# Read the file and create an iris data set in R.
+iris_tidy <- read.csv(file = "/Users/analauracortes/Desktop/iris_tidy.csv")
+head(iris_tidy)
+```
+
+
+```{r}
+# Creating a datafram
+iris_df <- data.frame(iris_tidy)
+```
+```{r}
+# Plot the dataframe
+ggplot(iris_df, aes(x = Measure, y = Value, col = Part)) +
+  geom_jitter() +
+  facet_grid(. ~ Species)
+head(iris_tidy)
+```
+
+```{r}
+# The Split
+n <- nrow(iris_df)
+n_train <- round(.80 * n)
+```
+
+```{r}
+#set the Seed
+set.seed(123)
+```
+
+```{r}
+# Create a vector of indicise which is an 80% random sample
+train_indicise <- sample(1:n, n_train)
+```
+
+```{r}
+# subset the data frame into the training set
+iris_train <- iris_df[train_indicise, ]
+```
+
+```{r}
+# Exclude the training indicise to create the test set
+iris_test <- iris_df[-train_indicise, ]
+```
+
+```{r}
+# Train the model to predict "Species"
+iris_model <- rpart(formula = Species ~.,
+                    data = iris_train,
+                    method = "class",
+                    control = rpart.control(cp = 0),
+                    parms = list(split = "information"))
+```
+
+```{r}
+# The Prediction
+iris_pred <- predict(object = iris_model,
+                     newdata = iris_test,
+                     type = "class")
+```
+
+```{r}
+# Plotting the tree
+prp(iris_model, extra = 1, faclen=0,  nn = T,
+    box.col=c("green", "red"))
+```
+
+```{r}
+# The Confusion Matrix
+confusionMatrix(iris_pred,as.factor(iris_test$Species))
+```
+
+
+```{r}
+printcp(iris_model)
+plotcp(iris_model)
+```
+
+
+```{r}
+# Grow a tree with minsplit of 100 and max depth of 8
+iris_model_preprun <- rpart(formula = Species ~.,
+                            data = iris_train,
+                            method = "class",
+                            control = rpart.control(cp = 0),
+                            maxdepth = 8,
+                            minsplit = 50)
+```
+
+```{r}
+# Compute the accuracy of the pruned tree
+iris_pred_preprun <- predict(object = iris_model_preprun,
+                             newdata = iris_test,
+                             type = "class")
+```
+
+```{r}
+# Plotting the tree
+prp(iris_model_preprun, extra = 1, faclen=0,  nn = T,
+    box.col=c("green", "red"))
+```
+
+```{r}
+# The Confusion Matrix
+confusionMatrix(iris_pred_preprun,as.factor(iris_test$Species))
+
+```
+
+```{r}
+# Grow a tree with minsplit of 100 and max depth of 8
+iris_model_postprun <- rpart(formula = Species ~.,
+                             data = iris_train,
+                             method = "class",
+                             control = rpart.control(cp = 0.039),
+                             maxdepth = 9,
+                             minsplit = 50)
+```
+
+```{r}
+# Compute the accuracy of the pruned tree
+iris_pred_postprun <- predict(object = iris_model_postprun,
+                              newdata = iris_test,
+                              type = "class")
+```
+
+```{r}
+# Plotting the tree
+prp(iris_model_postprun, extra = 1, faclen=0,  nn = T,
+    box.col=c("green", "red"))
+```
+
+```{r}
+# The Confusion Matrix
+confusionMatrix(iris_pred_postprun,as.factor(iris_test$Species))
+
+```
